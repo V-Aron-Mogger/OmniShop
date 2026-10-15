@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniStore — Shop Anything in the World with Express Direct Delivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen selection:bg-orange-500 selection:text-white" x-data="shopApp()">
+
+    <!-- Top Announcement Banner -->
+    <div class="bg-gradient-to-r from-orange-600 via-amber-600 to-rose-600 text-white text-xs sm:text-sm font-medium py-2 px-4 text-center shadow-md">
+        <i class="fa-solid fa-earth-americas mr-2"></i> Express Worldwide Direct Delivery • <span class="underline font-bold">Find & Buy Anything You Can Imagine!</span>
+    </div>
+
+    <!-- Navigation Bar -->
+    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" @click="activeTab = 'shop'">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                    <i class="fa-solid fa-bag-shopping text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                        Omni<span class="text-orange-500">Store</span>
+                        <span class="text-[10px] bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full border border-orange-500/30">Global Direct</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Infinite Catalog • Premium Direct Fulfillment</p>
+                </div>
+            </div>
+
+            <!-- Search Anything Input -->
+            <div class="hidden md:flex flex-1 max-w-md mx-8">
+                <div class="relative w-full">
+                    <input type="text" x-model="searchQuery" @keyup.enter="searchAnything()" placeholder="Search anything (e.g., 'mechanical keyboard', 'dog toy')..." class="w-full bg-slate-800/90 border border-slate-700 rounded-xl pl-11 pr-24 py-2.5 text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 shadow-inner">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <button @click="searchAnything()" class="absolute right-1.5 top-1.5 bottom-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-3.5 rounded-lg text-xs font-semibold shadow transition flex items-center gap-1">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Find Anything
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Links & Wallet Ticker -->
+            <div class="flex items-center space-x-4">
+                <button @click="activeTab = 'shop'" :class="activeTab === 'shop' ? 'bg-orange-500 text-white' : 'text-slate-300 hover:bg-slate-800'" class="px-3.5 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                    <i class="fa-solid fa-store"></i> Shop Website
+                </button>
+                <button @click="activeTab = 'wallet'; loadWallet();" :class="activeTab === 'wallet' ? 'bg-orange-500 text-white' : 'text-slate-300 hover:bg-slate-800'" class="px-3.5 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                    <i class="fa-solid fa-wallet"></i> Owner Wallet <span class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full text-xs font-bold border border-emerald-500/30" x-text="`$${walletBalance.toFixed(2)}`"></span>
+                </button>
+                <button @click="activeTab = 'orders'; loadOrders();" :class="activeTab === 'orders' ? 'bg-orange-500 text-white' : 'text-slate-300 hover:bg-slate-800'" class="px-3.5 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2">
+                    <i class="fa-solid fa-truck-fast"></i> Orders
+                </button>
+
+                <!-- Cart Button -->
+                <button @click="cartOpen = true" class="relative bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl border border-slate-700 transition flex items-center justify-center">
+                    <i class="fa-solid fa-cart-shopping text-lg"></i>
+                    <span x-show="cartCount > 0" class="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-lg" x-text="cartCount"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Notification Toast -->
+        <div x-show="toast.show" x-transition.opacity class="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-700 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-3 max-w-md">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-500/30">
+                <i class="fa-solid fa-check text-lg"></i>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-slate-100" x-text="toast.title"></h4>
+                <p class="text-xs text-slate-400" x-text="toast.message"></p>
+            </div>
+        </div>
+
+        <!-- TAB 1: SHOP CATALOG & GLOBAL FINDER -->
+        <div x-show="activeTab === 'shop'" class="space-y-8">
+
+            <!-- Hero / Global Importer Banner -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 border border-slate-800 p-8 sm:p-10 shadow-2xl">
+                <div class="absolute -right-20 -bottom-20 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="relative z-10 max-w-2xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 text-orange-400 text-xs font-semibold mb-4 border border-orange-500/20">
+                        <i class="fa-solid fa-bolt"></i> Direct Global Fulfillment • Zero Inventory Required
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight mb-3">
+                        Shop <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400">Anything</span> in the World
+                    </h2>
+                    <p class="text-slate-300 text-sm sm:text-base mb-6 leading-relaxed">
+                        Welcome to your premier destination for millions of unique products. If you can imagine it, you can find it here with express direct delivery and guaranteed satisfaction.
+                    </p>
+
+                    <!-- Instant Global Search Form -->
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <input type="text" x-model="globalQuery" @keyup.enter="globalImport()" placeholder="Can't find an item? Search any product to add it instantly..." class="w-full bg-slate-950/80 border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500 shadow-inner">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-500"></i>
+                        </div>
+                        <button @click="globalImport()" :disabled="importing" class="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold px-6 py-3 rounded-xl text-sm shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50">
+                            <i :class="importing ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'" class="fa-solid"></i>
+                            <span x-text="importing ? 'Searching Catalog...' : 'Find & Add Item'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories & Filters -->
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2 overflow-x-auto pb-2">
+                    <template x-for="cat in categories">
+                        <button @click="selectedCategory = cat; fetchProducts()" :class="selectedCategory === cat ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'" class="px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap" x-text="cat"></button>
+                    </template>
+                </div>
+                <div class="text-xs text-slate-400 font-medium">
+                    Showing <span class="text-white font-bold" x-text="products.length"></span> items in catalog
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <template x-for="product in products" :key="product.id">
+                    <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl hover:border-slate-700 transition flex flex-col group">
+                        <!-- Product Image & Badges -->
+                        <div class="relative h-48 bg-slate-950 overflow-hidden">
+                            <img :src="product.image_url" :alt="product.title" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            <div class="absolute top-3 left-3 flex flex-col gap-1">
+                                <span class="bg-emerald-600/90 text-white border border-emerald-500/30 text-[10px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-md shadow">In Stock • Global Direct</span>
+                            </div>
+                        </div>
+
+                        <!-- Product Content -->
+                        <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+                            <div>
+                                <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                                    <span x-text="product.category"></span>
+                                    <div class="flex items-center text-amber-400 gap-1">
+                                        <i class="fa-solid fa-star text-[10px]"></i>
+                                        <span x-text="product.rating"></span>
+                                    </div>
+                                </div>
+                                <h3 class="text-sm font-bold text-white line-clamp-2 mb-1" x-text="product.title"></h3>
+                                <p class="text-xs text-slate-400 line-clamp-2" x-text="product.description"></p>
+                            </div>
+
+                            <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <div class="text-lg font-extrabold text-orange-400" x-text="`$${product.retail_price.toFixed(2)}`"></div>
+                                </div>
+                                <button @click="addToCart(product)" class="bg-slate-800 hover:bg-orange-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow flex items-center gap-1.5 group-hover:bg-orange-500">
+                                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- TAB 2: OWNER WALLET & EARNINGS DASHBOARD -->
+        <div x-show="activeTab === 'wallet'" class="space-y-8" x-cloak>
+            <div class="bg-gradient-to-r from-emerald-900/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-3xl p-8 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold mb-3 border border-emerald-500/30">
+                        <i class="fa-solid fa-wallet"></i> Shop Owner Wallet & Profits
+                    </div>
+                    <h2 class="text-3xl font-black text-white">Available Balance</h2>
+                    <p class="text-slate-400 text-sm mt-1">Every time a customer buys from your website, the 5% markup profit lands instantly here.</p>
+                </div>
+                <div class="text-center md:text-right bg-slate-950/80 px-8 py-6 rounded-2xl border border-slate-800 shadow-inner">
+                    <div class="text-4xl sm:text-5xl font-black text-emerald-400" x-text="`$${walletBalance.toFixed(2)}`"></div>
+                    <div class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Ready for instant payout</div>
+                </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-xl p-6">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-orange-500"></i> Profit Ledger (5% Markup Per Sale)
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="px-4 py-3 rounded-l-xl">Description</th>
+                                <th class="px-4 py-3">Type</th>
+                                <th class="px-4 py-3">Profit Earned</th>
+                                <th class="px-4 py-3 rounded-r-xl">Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <template x-for="tx in walletTransactions">
+                                <tr class="hover:bg-slate-800/50 transition">
+                                    <td class="px-4 py-3 font-medium text-white" x-text="tx.description"></td>
+                                    <td class="px-4 py-3">
+                                        <span :class="tx.type === 'CREDIT' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'" class="text-[10px] font-bold px-2.5 py-1 rounded-full border" x-text="tx.type"></span>
+                                    </td>
+                                    <td class="px-4 py-3 font-extrabold" :class="tx.type === 'CREDIT' ? 'text-emerald-400' : 'text-red-400'" x-text="`${tx.type === 'CREDIT' ? '+' : '-'}$${tx.amount.toFixed(2)}`"></td>
+                                    <td class="px-4 py-3 text-slate-400 text-xs" x-text="tx.created_at"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: ORDERS & AUTOMATED FULFILLMENT -->
+        <div x-show="activeTab === 'orders'" class="space-y-8" x-cloak>
+            <div class="bg-slate-900 rounded-3xl border border-slate-800 p-8 shadow-2xl">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-black text-white">Customer Orders & Automated Fulfillment</h2>
+                        <p class="text-slate-400 text-sm">Orders placed on your website are seamlessly routed to global direct shipping partners in the background.</p>
+                    </div>
+                    <button @click="loadOrders()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                        <i class="fa-solid fa-rotate"></i> Refresh Status
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="px-4 py-3 rounded-l-xl">Order Ref</th>
+                                <th class="px-4 py-3">Customer</th>
+                                <th class="px-4 py-3">Total Paid</th>
+                                <th class="px-4 py-3">Your 5% Profit</th>
+                                <th class="px-4 py-3">Fulfillment ID</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3 rounded-r-xl">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <template x-for="order in orders">
+                                <tr class="hover:bg-slate-800/50 transition">
+                                    <td class="px-4 py-3 font-bold text-orange-400" x-text="order.order_ref"></td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-white" x-text="order.customer_name"></div>
+                                        <div class="text-xs text-slate-400" x-text="order.customer_email"></div>
+                                    </td>
+                                    <td class="px-4 py-3 font-bold text-white" x-text="`$${order.total_amount.toFixed(2)}`"></td>
+                                    <td class="px-4 py-3 font-extrabold text-emerald-400" x-text="`+$${order.wallet_profit.toFixed(2)}`"></td>
+                                    <td class="px-4 py-3 font-mono text-xs text-slate-400" x-text="order.supplier_order_id"></td>
+                                    <td class="px-4 py-3">
+                                        <span class="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[10px] font-bold px-2.5 py-1 rounded-full" x-text="order.status"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-slate-400 text-xs" x-text="order.created_at"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SLIDEOUT CART DRAWER -->
+    <div x-show="cartOpen" class="fixed inset-0 z-50 overflow-hidden" x-cloak>
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" @click="cartOpen = false"></div>
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl flex flex-col">
+                <!-- Cart Header -->
+                <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping text-orange-500"></i> Shopping Cart (<span x-text="cartCount"></span>)
+                    </h3>
+                    <button @click="cartOpen = false" class="text-slate-400 hover:text-white p-2">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Cart Items -->
+                <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                    <template x-for="(item, index) in cart" :key="item.id">
+                        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center gap-4">
+                            <img :src="item.image_url" class="w-16 h-16 object-cover rounded-xl border border-slate-800">
+                            <div class="flex-1">
+                                <h4 class="text-sm font-bold text-white line-clamp-1" x-text="item.title"></h4>
+                                <div class="text-xs text-orange-400 font-bold mt-1" x-text="`$${item.retail_price.toFixed(2)}`"></div>
+                                <div class="flex items-center gap-3 mt-2">
+                                    <button @click="updateQty(index, -1)" class="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center text-xs">-</button>
+                                    <span class="text-xs font-bold text-white" x-text="item.quantity"></span>
+                                    <button @click="updateQty(index, 1)" class="w-6 h-6 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center text-xs">+</button>
+                                </div>
+                            </div>
+                            <button @click="removeFromCart(index)" class="text-slate-500 hover:text-red-400 p-2">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+                    </template>
+                    <div x-show="cart.length === 0" class="text-center py-16 text-slate-500">
+                        <i class="fa-solid fa-cart-shopping text-4xl mb-3 opacity-30"></i>
+                        <p class="text-sm">Your cart is empty.</p>
+                    </div>
+                </div>
+
+                <!-- Cart Footer & Checkout -->
+                <div class="p-6 border-t border-slate-800 bg-slate-950 space-y-4">
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between text-slate-400">
+                            <span>Subtotal</span>
+                            <span x-text="`$${cartTotal.toFixed(2)}`"></span>
+                        </div>
+                        <div class="flex justify-between text-emerald-400 font-semibold">
+                            <span>Your 5% Profit Added to Wallet</span>
+                            <span x-text="`+$${(cartTotal * 0.05).toFixed(2)}`"></span>
+                        </div>
+                        <div class="flex justify-between text-white font-black text-lg pt-2 border-t border-slate-800">
+                            <span>Total</span>
+                            <span x-text="`$${cartTotal.toFixed(2)}`"></span>
+                        </div>
+                    </div>
+                    <button @click="openCheckoutModal()" :disabled="cart.length === 0" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-500/20 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-lock"></i> Proceed to Secure Checkout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div x-show="checkoutModalOpen" class="fixed inset-0 z-50 flex items-center justify-center px-4" x-cloak>
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" @click="checkoutModalOpen = false"></div>
+        <div class="relative bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-8 shadow-2xl z-10 space-y-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-orange-500"></i> Secure Checkout
+                </h3>
+                <button @click="checkoutModalOpen = false" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Full Name</label>
+                    <input type="text" x-model="customer.name" placeholder="John Doe" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Email Address</label>
+                    <input type="email" x-model="customer.email" placeholder="john@example.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Shipping Address</label>
+                    <textarea x-model="customer.address" placeholder="123 Main St, Apt 4B, City, Country" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-orange-500"></textarea>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                    <div class="flex justify-between text-xs text-slate-400">
+                        <span>Items Total:</span>
+                        <span x-text="`$${cartTotal.toFixed(2)}`"></span>
+                    </div>
+                    <div class="flex justify-between text-xs text-emerald-400 font-bold">
+                        <span>Owner Profit Credited to Wallet (5%):</span>
+                        <span x-text="`+$${(cartTotal * 0.05).toFixed(2)}`"></span>
+                    </div>
+                    <div class="flex justify-between text-sm font-extrabold text-white pt-2 border-t border-slate-800">
+                        <span>Total Due:</span>
+                        <span x-text="`$${cartTotal.toFixed(2)}`"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button @click="checkoutModalOpen = false" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition">Cancel</button>
+                <button @click="submitCheckout()" :disabled="checkingOut" class="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50">
+                    <i :class="checkingOut ? 'fa-spinner fa-spin' : 'fa-check'" class="fa-solid"></i>
+                    <span x-text="checkingOut ? 'Processing Order...' : 'Complete Purchase'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alpine.js Application Script -->
+    <script>
+        function shopApp() {
+            return {
+                activeTab: 'shop',
+                searchQuery: '',
+                globalQuery: '',
+                selectedCategory: 'All',
+                categories: ['All', 'Electronics', 'Gadgets', 'Home & Living', 'Fashion', 'Beauty', 'Toys & Hobbies'],
+                products: [],
+                cart: [],
+                cartOpen: false,
+                checkoutModalOpen: false,
+                importing: false,
+                checkingOut: false,
+                walletBalance: 25.00,
+                walletTransactions: [],
+                orders: [],
+                customer: { name: '', email: '', address: '' },
+                toast: { show: false, title: '', message: '' },
+
+                init() {
+                    this.fetchProducts();
+                    this.loadWallet();
+                    this.loadOrders();
+                },
+
+                fetchProducts() {
+                    let url = `/api/products?search=${encodeURIComponent(this.searchQuery)}&category=${encodeURIComponent(this.selectedCategory)}`;
+                    fetch(url)
+                        .then(res => res.json())
+                        .then(data => { this.products = data; });
+                },
+
+                searchAnything() {
+                    this.fetchProducts();
+                },
+
+                globalImport() {
+                    if (!this.globalQuery.trim()) return;
+                    this.importing = true;
+                    fetch('/api/search-external', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ keyword: this.globalQuery })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        this.importing = false;
+                        if (data.success) {
+                            this.globalQuery = '';
+                            this.showToast('Item Added to Catalog!', data.message);
+                            this.fetchProducts();
+                            this.products.unshift(data.product);
+                        } else {
+                            this.showToast('Error', data.error || 'Failed to find item', 'error');
+                        }
+                    });
+                },
+
+                addToCart(product) {
+                    let existing = this.cart.find(item => item.id === product.id);
+                    if (existing) {
+                        existing.quantity++;
+                    } else {
+                        this.cart.push({ ...product, quantity: 1 });
+                    }
+                    this.showToast('Added to Cart', `${product.title} added successfully.`);
+                },
+
+                updateQty(index, delta) {
+                    this.cart[index].quantity += delta;
+                    if (this.cart[index].quantity <= 0) {
+                        this.cart.splice(index, 1);
+                    }
+                },
+
+                removeFromCart(index) {
+                    this.cart.splice(index, 1);
+                },
+
+                get cartCount() {
+                    return this.cart.reduce((sum, item) => sum + item.quantity, 0);
+                },
+
+                get cartTotal() {
+                    return this.cart.reduce((sum, item) => sum + (item.retail_price * item.quantity), 0);
+                },
+
+                openCheckoutModal() {
+                    this.cartOpen = false;
+                    this.checkoutModalOpen = true;
+                },
+
+                submitCheckout() {
+                    if (!this.customer.name || !this.customer.email || !this.customer.address) {
+                        alert('Please fill in all checkout details.');
+                        return;
+                    }
+                    this.checkingOut = true;
+                    fetch('/api/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ cart: this.cart, customer: this.customer })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        this.checkingOut = false;
+                        this.checkoutModalOpen = false;
+                        if (data.success) {
+                            this.showToast('Order Placed Successfully!', 'Your order has been placed and routed for express fulfillment.');
+                            this.cart = [];
+                            this.loadWallet();
+                            this.loadOrders();
+                            this.customer = { name: '', email: '', address: '' };
+                        } else {
+                            alert(data.error);
+                        }
+                    });
+                },
+
+                loadWallet() {
+                    fetch('/api/wallet')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.walletBalance = data.balance;
+                            this.walletTransactions = data.transactions;
+                        });
+                },
+
+                loadOrders() {
+                    fetch('/api/orders')
+                        .then(res => res.json())
+                        .then(data => {
+                            this.orders = data;
+                        });
+                },
+
+                showToast(title, message) {
+                    this.toast.title = title;
+                    this.toast.message = message;
+                    this.toast.show = true;
+                    setTimeout(() => { this.toast.show = false; }, 4000);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
