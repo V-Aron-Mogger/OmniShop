@@ -143,7 +143,7 @@ def search_external():
     img = random.choice(images)
 
     title = f"{keyword.title()} - Global Sourced Edition"
-    description = f"Sourced directly from {source} global verified supplier. High quality {keyword}, factory tested with express international dispatch."
+    description = f"Direct global fulfillment. High quality {keyword}, factory tested with express international dispatch."
     category = random.choice(['Electronics', 'Gadgets', 'Home & Living', 'Fashion', 'Beauty', 'Toys & Hobbies'])
     supplier_item_id = f"{'AE' if source == 'AliExpress' else 'TM'}-{random.randint(10000, 99999)}"
     rating = round(random.uniform(4.5, 5.0), 1)
@@ -162,7 +162,7 @@ def search_external():
 
     return jsonify({
         'success': True,
-        'message': f'Successfully imported "{title}" from {source}! Retail price set with 5.0% markup.',
+        'message': f'Successfully added "{title}" to store catalog with 5.0% profit markup.',
         'product': dict(new_product)
     })
 
@@ -204,7 +204,7 @@ def checkout():
                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                    (order_ref, customer.get('name', 'Valued Customer'), customer.get('email', 'customer@example.com'),
                     customer.get('address', '123 Main St'), round(total_amount, 2), round(total_profit, 2),
-                    'Processing with Supplier', f"SUP-{random.randint(10000000, 99990000)}", now_str))
+                    'Processing with Fulfillment Partner', f"SUP-{random.randint(10000000, 99990000)}", now_str))
 
     if total_profit > 0:
         cursor.execute('''INSERT INTO wallet_transactions (description, amount, type, created_at)
@@ -219,7 +219,7 @@ def checkout():
         'order_ref': order_ref,
         'profit_earned': round(total_profit, 2),
         'total': round(total_amount, 2),
-        'message': f'Order {order_ref} placed successfully! Sourced from suppliers & ${round(total_profit, 2)} credited to your wallet.'
+        'message': f'Order {order_ref} placed successfully! ${round(total_profit, 2)} credited to your owner wallet.'
     })
 
 @app.route('/api/wallet')
@@ -242,13 +242,6 @@ def api_orders():
     return jsonify([dict(o) for o in orders])
 
 if __name__ == '__main__':
-    print("Starting OmniDropShop Website...")
+    print("Starting OmniStore Website...")
     print("Open your web browser at: http://localhost:5000")
     app.run(debug=True, port=5000)
-```
-
-Now let's write `OmniDropShop/templates/index.html` (the stunning dropshipping website template). We already drafted it above; let's write it out with `Write`. Ensure all script tags, Alpine.js bindings, Tailwind styling, and interactivity are pristine. Let's write `OmniDropShop/templates/index.html`. alfabetically/structurally complete. Wait, let's verify if `OmniDropShop/templates/index.html` was already written. No, we only wrote `requirements.txt`. Let's write `index.html` now. Note that `Write` requires an absolute path or path relative to session working directory. Let's provide absolute path or `C:\Users\User\Desktop\Projects\OmniDropShop\templates\index.html`. Let's use absolute path to be 100% foolproof. Wait, the system instructions say: `file_path must be an absolute path.` Let's use absolute paths for Write!
-
-Let's check absolute path: `C:\Users\User\Desktop\Projects\OmniDropShop\app.py`, `C:\Users\User\Desktop\Projects\OmniDropShop\templates\index.html`, `C:\Users\User\Desktop\Projects\OmniDropShop\requirements.txt`, `C:\Users\User\Desktop\Projects\OmniDropShop\run_website.bat`, `C:\Users\User\Desktop\Projects\OmniDropShop\README.md`.
-
-Let's write `C:\Users\User\Desktop\Projects\OmniDropShop\app.py`. plugins/code are tested. Let's call `Write`.ุ
